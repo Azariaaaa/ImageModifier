@@ -60,5 +60,10 @@ namespace Shaders
         {
             return (byte)((valueA * (100 - ratio) + valueB * ratio) / 100);
         }
+
+        private void InvertButtonClicked(object sender, RoutedEventArgs e)
+        {
+            // a coder
+        }
     }
 }

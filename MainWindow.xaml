@@ -29,10 +29,23 @@
                     Width="200"
                     Margin="10"
                     ValueChanged="OnSliderValueChanged" />
-            <Button Content="Appliquer"
-                    Margin="10" />
-            <Button Content="Réinitialiser"
-                    Margin="10" />
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Button Content="Invert"
+                        Width="100"
+                        Margin="10"
+                        Grid.Column="0" 
+                        Click="InvertButtonClicked"/>
+                <Button Content="Réinitialiser"
+                        Width="100"
+                        Margin="10"
+                        Grid.Column="1" />
+            </Grid>
+
         </StackPanel>
     </Grid>
 </Window>
