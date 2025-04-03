@@ -40,7 +40,24 @@
                         Margin="10"
                         Grid.Column="0" 
                         Click="InvertButtonClicked"/>
-                <Button Content="Réinitialiser"
+                <Button Content="Reset"
+                        Width="100"
+                        Margin="10"
+                        Grid.Column="1"
+                        Click="ResetButtonClicked"/>
+            </Grid>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Button Content="Black and white"
+                        Width="100"
+                        Margin="10"
+                        Grid.Column="0" 
+                        Click="BlackAndWhiteButtonClicked"/>
+                <Button Content="A coder"
                         Width="100"
                         Margin="10"
                         Grid.Column="1" />

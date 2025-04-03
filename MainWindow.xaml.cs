@@ -3,14 +3,16 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Runtime.InteropServices;
 
 namespace Shaders
 {
     public partial class MainWindow : Window
     {
         private BitmapSource originalImage;
+        private BitmapSource currentImage;
         private BitmapImage monkeyBitmap;
+        private BitmapSource MemorisedBitmap { get ; set; }
+        private bool IsBlackAndWhiteFilterActivated { get; set; } = false;
 
         public MainWindow()
         {
@@ -25,45 +27,126 @@ namespace Shaders
             BitmapImage muskBitmap = new BitmapImage(muskUri);
             monkeyBitmap = new BitmapImage(monkeyUri);
             originalImage = muskBitmap;
-            DisplayedImage.Source = muskBitmap;
+            currentImage = originalImage;
+            DisplayedImage.Source = currentImage;
         }
 
-        private void OnSliderValueChanged(object sender, RoutedEventArgs e)
+        private void UpdateImage(BitmapSource newImage)
         {
-            DisplayedImage.Source = BlendImages(originalImage);
+            currentImage = newImage;
+            DisplayedImage.Source = newImage;
         }
 
         private BitmapSource BlendImages(BitmapSource source)
         {
             int sliderValue = (int)ColorSlider.Value;
 
-            int width = source.PixelWidth;
-            int height = source.PixelHeight;
-            int stride = width * 4;
-            byte[] muskPixels = new byte[height * stride];
-            byte[] monkeyPixels = new byte[height * stride];
+            PixelData muskData = GetPixelData(source);
+            PixelData monkeyData = GetPixelData(monkeyBitmap);
 
-            source.CopyPixels(muskPixels, stride, 0);
-            monkeyBitmap.CopyPixels(monkeyPixels, stride, 0);
+            byte[] pixels = muskData.Pixels;
 
-            for (int i = 0; i < muskPixels.Length; i += 4)
+            for (int i = 0; i < pixels.Length; i += 4)
             {
-                muskPixels[i] = BlendColorChannel(muskPixels[i], monkeyPixels[i], sliderValue); // Bleu
-                muskPixels[i + 1] = BlendColorChannel(muskPixels[i + 1], monkeyPixels[i + 1], sliderValue); // Vert
-                muskPixels[i + 2] = BlendColorChannel(muskPixels[i + 2], monkeyPixels[i + 2], sliderValue); // Rouge
-                muskPixels[i + 3] = BlendColorChannel(muskPixels[i + 3], monkeyPixels[i + 3], sliderValue); // Alpha
+                pixels[i] = BlendColorChannel(pixels[i], monkeyData.Pixels[i], sliderValue);         // Bleu
+                pixels[i + 1] = BlendColorChannel(pixels[i + 1], monkeyData.Pixels[i + 1], sliderValue); // Vert
+                pixels[i + 2] = BlendColorChannel(pixels[i + 2], monkeyData.Pixels[i + 2], sliderValue); // Rouge
+                pixels[i + 3] = BlendColorChannel(pixels[i + 3], monkeyData.Pixels[i + 3], sliderValue); // Alpha
             }
 
-            return BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgra32, null, muskPixels, stride);
+            return BitmapSource.Create(muskData.Width, muskData.Height, 96, 96, PixelFormats.Bgra32, null, pixels, muskData.Stride);
         }
+
         private static byte BlendColorChannel(byte valueA, byte valueB, int ratio)
         {
             return (byte)((valueA * (100 - ratio) + valueB * ratio) / 100);
         }
 
+        private BitmapSource InvertImage(BitmapSource source)
+        {
+            PixelData data = GetPixelData(source);
+            byte[] pixels = data.Pixels;
+            int width = data.Width;
+            int height = data.Height;
+            int stride = data.Stride;
+            int bytesPerPixel = 4;
+            byte temp;
+
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width / 2; x++)
+                {
+                    int leftIndex = y * stride + x * bytesPerPixel;
+                    int rightIndex = y * stride + (width - 1 - x) * bytesPerPixel;
+
+                    for (int i = 0; i < bytesPerPixel; i++)
+                    {
+                        temp = pixels[leftIndex + i];
+                        pixels[leftIndex + i] = pixels[rightIndex + i];
+                        pixels[rightIndex + i] = temp;
+                    }
+                }
+            }
+
+            return BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgra32, null, pixels, stride);
+        }
+
+        private BitmapSource BlackAndWhite(BitmapSource source)
+        {
+
+            if (!IsBlackAndWhiteFilterActivated)
+            {
+                MemorisedBitmap = source;
+                PixelData data = GetPixelData(source);
+                byte[] pixels = data.Pixels;
+                int width = data.Width;
+                int height = data.Height;
+                int stride = data.Stride;
+                int bytesPerPixel = 4;
+
+                for (int i = 0; i < pixels.Length; i += bytesPerPixel)
+                {
+                    int average = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
+                    pixels[i] = (byte)average;
+                    pixels[i + 1] = (byte)average;
+                    pixels[i + 2] = (byte)average;
+                }
+
+                IsBlackAndWhiteFilterActivated = !IsBlackAndWhiteFilterActivated;
+
+                return BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgra32, null, pixels, stride);
+            }
+
+            IsBlackAndWhiteFilterActivated = !IsBlackAndWhiteFilterActivated;
+            return MemorisedBitmap;
+        }
+
+        private PixelData GetPixelData(BitmapSource source)
+        {
+            int width = source.PixelWidth;
+            int height = source.PixelHeight;
+            int stride = width * 4; 
+            byte[] pixels = new byte[height * stride];
+            source.CopyPixels(pixels, stride, 0);
+            return new PixelData { Width = width, Height = height, Stride = stride, Pixels = pixels };
+        }
+        private void OnSliderValueChanged(object sender, RoutedEventArgs e)
+        {
+            UpdateImage(BlendImages(originalImage));
+        }
         private void InvertButtonClicked(object sender, RoutedEventArgs e)
         {
-            // a coder
+            UpdateImage(InvertImage(currentImage));
+        }
+        private void BlackAndWhiteButtonClicked(object sender, RoutedEventArgs e)
+        {
+            UpdateImage(BlackAndWhite(currentImage));
+        }
+
+        private void ResetButtonClicked(object sender, RoutedEventArgs e)
+        {
+            ColorSlider.Value = 0;
+            LoadImages();
         }
     }
 }

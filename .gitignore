@@ -8,6 +8,20 @@
 ## Get latest from https://github.com/github/gitignore/blob/main/Dotnet.gitignore
 
 # Build results
+
+# IDE
+.vs/
+*.user
+*.suo
+
+# Build folders
+bin/
+obj/
+
+# Autres trucs inutiles
+*.cache
+*.log
+
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/
@@ -52,3 +66,5 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+.vs/
